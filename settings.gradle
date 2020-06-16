@@ -1,2 +1,6 @@
+include ':medialibrary'
+include ':utilslibrary'
+include ':utilslibrary'
+include ':playerlibrary'
 include ':app'
 rootProject.name = "DafuPlayer"

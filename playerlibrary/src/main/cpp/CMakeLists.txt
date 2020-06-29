@@ -25,8 +25,8 @@ set_target_properties( yuv
         PROPERTIES IMPORTED_LOCATION
         ${CMAKE_SOURCE_DIR}/../jniLibs/${ANDROID_ABI}/libyuv.so )
 
-## Metadata库
-#add_subdirectory(${CMAKE_SOURCE_DIR}/Metadata)
+# Metadata库
+add_subdirectory(${CMAKE_SOURCE_DIR}/Metadata)
 
 ## SoundTouch库
 #add_subdirectory(${CMAKE_SOURCE_DIR}/SoundTouch)

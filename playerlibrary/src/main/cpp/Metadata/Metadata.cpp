@@ -51,7 +51,7 @@ void Metadata::setDuration(AVFormatContext *pFormatCtx) {
         }
     }
 
-    sprintf(value, "%d", duration);//fixme sprintf什么意思
+    sprintf(value, "%d", duration);
     av_dict_set(&pFormatCtx->metadata, DURATION, value, 0);
 }
 

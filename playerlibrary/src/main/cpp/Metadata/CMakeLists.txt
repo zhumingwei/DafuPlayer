@@ -9,6 +9,7 @@ add_library(
         #library
         Metadata.cpp
         com_cgfay_media_MediaMetadataRetriever.cpp
+        MediaMetadataRetriever.cpp
 )
 
 #链接动态库

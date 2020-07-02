@@ -31,7 +31,7 @@ add_library(
         SHARED
 
         #library TODO
-        test.cpp
+        source/common/FFmpegUtils.cpp
         )
 
 # 链接静态库

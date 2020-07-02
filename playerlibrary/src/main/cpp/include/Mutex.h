@@ -88,7 +88,7 @@ inline Mutex::Mutex(int type, const char* name){
     }
 }
 
-Mutex::~Mutex() {
+inline Mutex::~Mutex() {
     pthread_mutex_destroy(&mMutex);
 }
 

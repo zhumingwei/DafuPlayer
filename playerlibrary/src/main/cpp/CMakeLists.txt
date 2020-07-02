@@ -31,9 +31,9 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/Metadata)
 # SoundTouch库
 add_subdirectory(${CMAKE_SOURCE_DIR}/SoundTouch)
 
-## GLFilter库
-#add_subdirectory(${CMAKE_SOURCE_DIR}/CainFilter)
+# GLFilter库
+add_subdirectory(${CMAKE_SOURCE_DIR}/CainFilter)
 
-## 媒体播放器
-#add_subdirectory(${CMAKE_SOURCE_DIR}/MediaPlayer)
+# 媒体播放器
+add_subdirectory(${CMAKE_SOURCE_DIR}/MediaPlayer)
 

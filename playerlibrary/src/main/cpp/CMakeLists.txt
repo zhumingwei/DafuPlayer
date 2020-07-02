@@ -28,8 +28,8 @@ set_target_properties( yuv
 # Metadata库
 add_subdirectory(${CMAKE_SOURCE_DIR}/Metadata)
 
-## SoundTouch库
-#add_subdirectory(${CMAKE_SOURCE_DIR}/SoundTouch)
+# SoundTouch库
+add_subdirectory(${CMAKE_SOURCE_DIR}/SoundTouch)
 
 ## GLFilter库
 #add_subdirectory(${CMAKE_SOURCE_DIR}/CainFilter)

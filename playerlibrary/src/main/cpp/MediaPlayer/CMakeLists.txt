@@ -31,7 +31,12 @@ add_library(
         SHARED
 
         #library TODO
+
         source/common/FFmpegUtils.cpp
+
+        #queue
+        source/queue/FrameQueue.cpp
+        source/queue/PacketQueue.cpp
         )
 
 # 链接静态库

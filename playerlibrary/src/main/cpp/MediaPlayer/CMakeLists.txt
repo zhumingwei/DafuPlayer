@@ -37,6 +37,11 @@ add_library(
         #queue
         source/queue/FrameQueue.cpp
         source/queue/PacketQueue.cpp
+
+        #player
+        source/player/PlayerState.cpp
+        source/player/AVMessageQueue.cpp
+
         )
 
 # 链接静态库

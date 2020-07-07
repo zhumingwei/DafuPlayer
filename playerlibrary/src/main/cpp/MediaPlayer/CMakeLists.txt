@@ -31,9 +31,12 @@ add_library(
         SHARED
 
         #library TODO
-
+        #common
         source/common/FFmpegUtils.cpp
-
+        #decoder
+        source/decoder/AudioDecoder.cpp
+        source/decoder/MediaDecoder.cpp
+        source/decoder/VideoDecoder.cpp
         #queue
         source/queue/FrameQueue.cpp
         source/queue/PacketQueue.cpp
@@ -42,6 +45,9 @@ add_library(
         source/player/PlayerState.cpp
         source/player/AVMessageQueue.cpp
 
+        #sync
+        source/sync/MediaClock.cpp
+        source/sync/MediaSync.cpp
         )
 
 # 链接静态库

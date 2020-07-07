@@ -33,10 +33,17 @@ add_library(
         #library TODO
         #common
         source/common/FFmpegUtils.cpp
+        #convertor
+        source/convertor/AudioResampler.cpp
         #decoder
         source/decoder/AudioDecoder.cpp
         source/decoder/MediaDecoder.cpp
         source/decoder/VideoDecoder.cpp
+        #device
+        source/device/VideoDevice.cpp
+        source/device/android/GLESDevice.cpp
+        source/device/AudioDevice.cpp
+        source/device/android/SLESDevice.cpp
         #queue
         source/queue/FrameQueue.cpp
         source/queue/PacketQueue.cpp

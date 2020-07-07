@@ -44,6 +44,9 @@ public:
     //获取数据包
     int getPacket(AVPacket *pkt);
 
+    //获取数据包
+    int getPacket(AVPacket *pkt, int block);
+
     int getPacketSize();
 
     int getSize();
@@ -57,7 +60,7 @@ private:
 
 private:
     Mutex mMutex;
-    Condition condition;
+    Condition mCondition;
     PacketList *first_pkt, *last_pkt;
     int nb_packets;
     int size;

@@ -99,6 +99,7 @@ inline status_t Condition::waitRelative(Mutex &mutex, nsecs_t reltime) {
         ts.tv_sec +=1;
     }
     return -pthread_cond_timedwait(&mCond, &mutex.mMutex, &ts);
+
 }
 
 inline status_t Condition::waitRelativeMs(Mutex &mutex, nsecs_t times) {

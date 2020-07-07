@@ -135,10 +135,11 @@ AVDictionary **setupStreamInfoOptions(AVFormatContext *s, AVDictionary *codec_op
         av_log(NULL, AV_LOG_ERROR,
                "Could not alloc memory for stream options.\n");
 #endif
+        return NULL;
     }
 
-    for (int i = 0; i < s->nb_streams; ++i) {
-        opts[i] = filterCodecOptions(codec_opts, s->streams[i]->codecpar->codec_type, s,
+    for (i = 0; i < s->nb_streams; ++i) {
+        opts[i] = filterCodecOptions(codec_opts, s->streams[i]->codecpar->codec_id, s,
                                      s->streams[i], NULL);
     }
     return opts;

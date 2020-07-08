@@ -6,14 +6,19 @@
 #define DAFUPLAYER_AUDIORESAMPLER_H
 
 
-#include <cstdint>
-#include <libavutil/samplefmt.h>
-#include <libswresample/swresample.h>
+
+
 #include <player/PlayerState.h>
 #include <decoder/AudioDecoder.h>
 #include <device/AudioDevice.h>
 #include <sync/MediaSync.h>
 #include <SoundTouchWrapper.h>
+extern "C"{
+#include <cstdint>
+#include <libavutil/samplefmt.h>
+#include <libswresample/swresample.h>
+};
+
 
 /**
  * 音频参数

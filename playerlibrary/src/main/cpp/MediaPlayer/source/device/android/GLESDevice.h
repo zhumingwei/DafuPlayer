@@ -5,7 +5,7 @@
 #ifndef DAFUPLAYER_GLESDEVICE_H
 #define DAFUPLAYER_GLESDEVICE_H
 
-
+#include <player/PlayerState.h>
 #include <device/VideoDevice.h>
 #include <android/native_window.h>
 #include <node/NodeType.h>

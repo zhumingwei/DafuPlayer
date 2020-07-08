@@ -3,7 +3,6 @@
 //
 
 #include <node/DisplayRenderNode.h>
-#include <libavutil/mem.h>
 #include "GLESDevice.h"
 
 GLESDevice::GLESDevice() {

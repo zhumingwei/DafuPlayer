@@ -30,6 +30,7 @@ public:
             uint8_t *vData, int vPitch
     );
 
+
     //更新ARGB数据
     virtual int onUpdateARGB(uint8_t *rgba, int pitch);
 

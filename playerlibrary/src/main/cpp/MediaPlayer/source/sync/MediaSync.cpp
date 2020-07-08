@@ -315,26 +315,27 @@ void MediaSync::checkExternalClockSpeed() {
                 FFMIN(EXTERNAL_CLOCK_SPEED_MAX, extClock->getSpeed() + EXTERNAL_CLOCK_SPEED_STEP));
     } else {
         double speed = extClock->getSpeed();
-        if (speed != 1.0){
-            extClock->setSpeed(speed + EXTERNAL_CLOCK_SPEED_STEP * (1.0 - speed) / fabs(1.0 - speed));
+        if (speed != 1.0) {
+            extClock->setSpeed(
+                    speed + EXTERNAL_CLOCK_SPEED_STEP * (1.0 - speed) / fabs(1.0 - speed));
         }
     }
 }
 
 double MediaSync::calculateDelay(double delay) {
-    double sync_threshold,diff = 0;
+    double sync_threshold, diff = 0;
     //如果不是同步到视频流，则需要计算延时时间
-    if (playerState->syncType != AV_SYNC_VIDEO){
+    if (playerState->syncType != AV_SYNC_VIDEO) {
         // 计算差值
         diff = videoClock->getClock() - getMasterClock();
         //用差值与同步阈值计算延时
         sync_threshold = FFMAX(AV_SYNC_THRESHOLD_MIN, FFMIN(AV_SYNC_THRESHOLD_MAX, delay));
-        if (!isnan(diff) && fabs(diff) < maxFrameDuration){
-            if (diff <= -sync_threshold){
-                delay = FFMAX(0, delay+diff);
-            } else if(diff >= sync_threshold && delay > AV_SYNC_FRAMEDUP_THRESHOLD){
+        if (!isnan(diff) && fabs(diff) < maxFrameDuration) {
+            if (diff <= -sync_threshold) {
+                delay = FFMAX(0, delay + diff);
+            } else if (diff >= sync_threshold && delay > AV_SYNC_FRAMEDUP_THRESHOLD) {
                 delay = delay + diff;
-            } else if (diff >= sync_threshold){
+            } else if (diff >= sync_threshold) {
                 delay = 2 * delay;
             }
         }
@@ -345,7 +346,7 @@ double MediaSync::calculateDelay(double delay) {
 
 double MediaSync::calculateDuration(Frame *vp, Frame *nextvp) {
     double duration = nextvp->pts - vp->pts;
-    if (isnan(duration) || duration <= 0 || duration > maxFrameDuration){
+    if (isnan(duration) || duration <= 0 || duration > maxFrameDuration) {
         return vp->duration;
     } else {
         return duration;
@@ -354,8 +355,146 @@ double MediaSync::calculateDuration(Frame *vp, Frame *nextvp) {
 
 void MediaSync::renderVideo() {
     //TODO
-    m
+    mMutex.lock();
+    if (!videoDecoder || !videoDevice) {
+        mMutex.unlock();
+        return;
+    }
 
+    Frame *vp = videoDecoder->getFrameQueue()->lastFrame();
+    int ret = 0;
+    if (!vp->uploaded) {
+        //根据图像格式更新纹理数据
+        switch (vp->frame->format) {
+            /*
+             * YUV420P 和 YUVJ420P除了颜色控件不一样外，其他的没有什么区别
+             * YUV420P表示的范围是 16 ~ 235, 而YUVJ420P表示的范围是 0 ~ 255
+             * 这里做了兼容处理，后续可以优化，shader已经过验证
+             */
+            case AV_PIX_FMT_YUV420P:
+            case AV_PIX_FMT_YUVJ420P: {
+                //初始化纹理
+                videoDevice->onInitTexture(vp->frame->width, vp->frame->height, FMT_YUV420P,
+                                           BLEND_NONE);
+                if (vp->frame->linesize[0] < 0 || vp->frame->linesize[1] < 0 ||
+                    vp->frame->linesize[2] < 0) {
+                    av_log(nullptr, AV_LOG_ERROR, "Negative linesize is not suported for YUV.\n");
+                    return;
+                }
+                ret = videoDevice->onUpdateYUV(vp->frame->data[0], vp->frame->linesize[0],
+                                               vp->frame->data[1], vp->frame->linesize[1],
+                                               vp->frame->data[2], vp->frame->linesize[2]);
+                if (ret < 0) {
+                    return;
+                }
+                break;
+            }
+
+                // 非MTKCPU的MediaCodec解码出来的视频格式是NV12的，我们使用libyuv转成ARGB格式
+            case AV_PIX_FMT_NV12: {
+                if (!mBuffer) {
+                    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_BGRA, vp->frame->width,
+                                                            vp->frame->height, 1);
+                    mBuffer = (uint8_t *) av_malloc(numBytes * sizeof(uint8_t));
+                    pFrameARGB = av_frame_alloc();
+                    av_image_fill_arrays(
+                            pFrameARGB->data, pFrameARGB->linesize, mBuffer, AV_PIX_FMT_ARGB,
+                            vp->frame->width, vp->frame->height, 1
+                    );
+                }
+                libyuv::NV12ToARGB(vp->frame->data[0], vp->frame->linesize[0],
+                                   vp->frame->data[1], vp->frame->linesize[1],
+                                   pFrameARGB->data[0], pFrameARGB->linesize[0],
+                                   vp->frame->width, vp->frame->height
+                );
+                videoDevice->onInitTexture(vp->frame->width, vp->frame->height, FMT_ARGB,
+                                           BLEND_NONE, videoDecoder->getRotate());
+                ret = videoDevice->onUpdateARGB(pFrameARGB->data[0], pFrameARGB->linesize[0]);
+                if (ret < 0) {
+                    return;
+                }
+                break;
+            }
+
+                // 将nv21格式转换成ARGB格式
+            case AV_PIX_FMT_NV21: {
+                if (!mBuffer) {
+                    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_BGRA, vp->frame->width,
+                                                            vp->frame->height, 1);
+                    mBuffer = (uint8_t *) av_malloc(numBytes * sizeof(uint8_t));
+                    pFrameARGB = av_frame_alloc();
+                    av_image_fill_arrays(pFrameARGB->data, pFrameARGB->linesize, mBuffer,
+                                         AV_PIX_FMT_ARGB, vp->frame->width, vp->frame->height, 1);
+                }
+                libyuv::NV21ToARGB(
+                        vp->frame->data[0], vp->frame->linesize[0],
+                        vp->frame->data[1], vp->frame->linesize[1],
+                        pFrameARGB->data[0], pFrameARGB->linesize[0],
+                        vp->frame->width, vp->frame->height
+                );
+
+                videoDevice->onInitTexture(vp->frame->width, vp->frame->height, FMT_ARGB,
+                                           BLEND_NONE, videoDecoder->getRotate());
+                ret = videoDevice->onUpdateARGB(pFrameARGB->data[0], pFrameARGB->linesize[0]);
+                if (ret < 0) {
+                    return;
+                }
+                break;
+            }
+
+                //直接渲染BGRA,对应的是shader->argb格式
+            case AV_PIX_FMT_BGRA: {
+                videoDevice->onInitTexture(vp->frame->width, vp->frame->height,
+                                           FMT_ARGB, BLEND_NONE
+                );
+                ret = videoDevice->onUpdateARGB(vp->frame->data[0], vp->frame->linesize[0]);
+                if (ret < 0) {
+                    return;
+                }
+                break;
+            }
+
+                // 其他格式转码成BGRA格式再做渲染
+            default:{
+                swsContext = sws_getCachedContext(swsContext, vp->frame->width, vp->frame->height,
+                                                  (AVPixelFormat) vp->frame->format,
+                                                  vp->frame->width, vp->frame->height,
+                                                  AV_PIX_FMT_BGRA, SWS_BICUBIC, nullptr, nullptr,
+                                                  nullptr
+                );
+                if (!mBuffer) {
+                    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_BGRA, vp->frame->width,
+                                                            vp->frame->height, 1);
+                    mBuffer = (uint8_t *) av_malloc(numBytes * sizeof(uint8_t));
+                    pFrameARGB = av_frame_alloc();
+                    av_image_fill_arrays(pFrameARGB->data, pFrameARGB->linesize, mBuffer,
+                                         AV_PIX_FMT_BGRA, vp->frame->width, vp->frame->height, 1);
+                }
+
+                if (swsContext != nullptr) {
+                    sws_scale(swsContext, (uint8_t const *const *) vp->frame->data,
+                              vp->frame->linesize, 0, vp->frame->height,
+                              pFrameARGB->data, pFrameARGB->linesize
+                    );
+                }
+                videoDevice->onInitTexture(vp->frame->width, vp->frame->height,
+                                           FMT_ARGB,BLEND_NONE,videoDecoder->getRotate()
+                );
+                ret = videoDevice->onUpdateARGB(pFrameARGB->data[0], pFrameARGB->linesize[0]);
+                if (ret < 0){
+                    return;
+                }
+                break;
+            }
+        }
+        vp->uploaded = 1;
+    }
+    //请求渲染视频
+    if (videoDevice != nullptr){
+        videoDevice->setTimeStamp(isnan(vp->pts) ?0 :vp->pts);
+        videoDevice->onRequestRender(vp->frame->linesize[0] < 0);
+    }
+    mMutex.unlock();
 }
 
 

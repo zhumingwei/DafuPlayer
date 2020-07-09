@@ -51,7 +51,7 @@ add_library(
         #player
         source/player/PlayerState.cpp
         source/player/AVMessageQueue.cpp
-
+        source/player/MediaPlayer.cpp
         #sync
         source/sync/MediaClock.cpp
         source/sync/MediaSync.cpp

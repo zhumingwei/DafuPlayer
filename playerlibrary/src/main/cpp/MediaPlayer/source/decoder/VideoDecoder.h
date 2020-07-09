@@ -9,7 +9,6 @@
 #include <sync/MediaClock.h>
 #include "MediaDecoder.h"
 
-//todo
 class VideoDecoder :public MediaDecoder{
 public:
     VideoDecoder(AVFormatContext *pFormatCtx,

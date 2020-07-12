@@ -30,7 +30,6 @@ add_library(
 
         SHARED
 
-        #library TODO
         #common
         source/common/FFmpegUtils.cpp
         #convertor
@@ -55,6 +54,9 @@ add_library(
         #sync
         source/sync/MediaClock.cpp
         source/sync/MediaSync.cpp
+        #android
+        android/JNIHelp.cpp
+        android/CainMediaPlayer.cpp
         )
 
 # 链接静态库

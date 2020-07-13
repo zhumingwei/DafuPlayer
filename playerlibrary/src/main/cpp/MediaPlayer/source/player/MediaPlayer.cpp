@@ -173,6 +173,12 @@ void MediaPlayer::pause() {
     mCondition.signal();
 }
 
+void MediaPlayer::resume() {
+    Mutex::Autolock lock(mMutex);
+    playerState->pauseRequest = 0;
+    mCondition.signal();
+}
+
 void MediaPlayer::stop() {
     mMutex.lock();
     playerState->abortRequest = 1;
@@ -274,7 +280,6 @@ int MediaPlayer::getVideoHeight() {
     return 0;
 }
 
-//TODO
 long MediaPlayer::getCurrentPosition() {
     Mutex::Autolock lock(mMutex);
     int64_t currentPosition = 0;
@@ -285,5 +290,175 @@ long MediaPlayer::getCurrentPosition() {
         //起始延时
         int64_t start_time = pFormatCtx->start_time;
         int64_t start_diff = 0;
+        if (start_time > 0 && start_time != AV_NOPTS_VALUE){
+            start_diff = av_rescale(start_time, 1000, AV_TIME_BASE);
+        }
+        // 计算主时钟的时间
+        int64_t pos = 0;
+        double clock = mediaSync->getMasterClock();
+        if (isnan(clock)){
+            pos = playerState->seekPos;
+        } else {
+            pos = (int64_t)(clock * 1000);
+        }
+        if (pos < 0 || pos < start_diff){
+            return 0;
+        }
+        return (long) (pos - start_diff);
     }
+    return (long) currentPosition;
 }
+
+long MediaPlayer::getDuration() {
+    Mutex::Autolock lock(mMutex);
+    return (long)mDuration;
+}
+
+int MediaPlayer::isPlaying() {
+    Mutex::Autolock lock(mMutex);
+    return !playerState->abortRequest && !playerState->pauseRequest;
+}
+
+int MediaPlayer::isLooping() {
+    return playerState->loop;
+}
+
+int MediaPlayer::getMetadata(AVDictionary **metadata) {
+    if (!pFormatCtx){
+        return -1;
+    }
+    // TODO getMetadata
+    return NO_ERROR;
+}
+
+static int avformat_interrupt_cb(void *ctx){
+    PlayerState *playerState = static_cast<PlayerState *>(ctx);
+    if (playerState->abortRequest){
+        return AVERROR_EOF;
+    }
+    return 0;
+}
+
+AVMessageQueue * MediaPlayer::getMessageQueue() {
+    Mutex::Autolock lock(mMutex);
+    return playerState->messageQueue;
+}
+
+PlayerState * MediaPlayer::getPlayerState() {
+    Mutex::Autolock lock(mMutex);
+    return playerState;
+}
+
+void MediaPlayer::run() {
+    readPackets();
+}
+
+int MediaPlayer::readPackets() {
+    int ret = 0;
+    AVDictionaryEntry *t;
+    AVDictionary **opts;
+    int scan_all_pmts_set = 0;
+
+    //准备解码器
+    mMutex.lock();
+    do {
+        // 创建解复用上下文
+        pFormatCtx = avformat_alloc_context();
+        if (!pFormatCtx){
+            av_log(NULL, AV_LOG_FATAL, "Could not allocate context\n");
+            ret = AVERROR(ENOMEM);
+            break;
+        }
+
+        // 设置解复用中断回调
+        pFormatCtx->interrupt_callback.callback = avformat_interrupt_cb;
+        pFormatCtx->interrupt_callback.opaque = playerState;
+        if (!av_dict_get(playerState->format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)){
+            av_dict_set(&playerState->format_opts, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
+            scan_all_pmts_set = 1;
+        }
+
+        // 处理文件头
+        if (playerState->headers){
+            av_dict_set(&playerState->format_opts, "headers", playerState->headers, 0);
+        }
+        // 处理文件偏移量
+        if (playerState->offset > 0){
+            pFormatCtx->skip_initial_bytes = playerState->offset;
+        }
+
+        // 设置rtmp/rtsp的超时值
+        if (av_stristart(playerState->url, "rtmp", NULL)
+            || av_stristart(playerState->url,"rtsp", NULL)
+        ){
+            av_log(NULL, AV_LOG_WARNING, "remove 'timeout' option for rtmp.\n");
+            av_dict_set(&playerState->format_opts, "timeout", NULL, 0);
+        }
+
+        // 打开文件
+        ret = avformat_open_input(&pFormatCtx, playerState->url,playerState->iformat, &playerState->format_opts);
+        if (ret < 0){
+            printError(playerState->url, ret);
+            ret = -1;
+            break;
+        }
+
+        //打开文件回调
+        if (playerState -> messageQueue){
+            playerState->messageQueue->postMessage(MSG_OPEN_INPUT);
+        }
+
+        if (scan_all_pmts_set) {
+            av_dict_set(&playerState->format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
+        }
+
+        if ((t = av_dict_get(playerState->format_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))){
+            av_log(NULL, AV_LOG_ERROR, "OPTION %S NOT FOUND.\N", t->key);
+            ret = AVERROR_OPTION_NOT_FOUND;
+            break;
+        }
+
+        if (playerState->genpts){
+            pFormatCtx->flags |= AVFMT_FLAG_GENPTS;
+        }
+        av_format_inject_global_side_data(pFormatCtx);
+        opts = setupStreamInfoOptions(pFormatCtx, playerState->codec_opts);
+
+        // 查找媒体流信息
+        ret = avformat_find_stream_info(pFormatCtx, opts);
+        if (opts != NULL) {
+            for (int i = 0; i < pFormatCtx->nb_streams; ++i) {
+                if (opts[i] != NULL){
+                    av_dict_free(&opts[i]);
+                }
+            }
+            av_freep(&opts);
+        }
+
+        if (ret < 0){
+            av_log(NULL, AV_LOG_WARNING,"%s: could not find codec parameters\n", playerState->url);
+            ret = -1;
+            break;
+        }
+
+        // 查找媒体信息流回调
+        //todo ggogoo
+    } while (false);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

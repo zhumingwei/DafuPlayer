@@ -442,7 +442,33 @@ int MediaPlayer::readPackets() {
         }
 
         // 查找媒体信息流回调
-        //todo ggogoo
+        if (playerState->messageQueue){
+            playerState->messageQueue->postMessage(MSG_FIND_STREAM_INFO);
+        }
+
+        // 判断是否实时流，判断是否需要设置无限缓冲区
+        playerState->realTime = isRealTime(pFormatCtx);
+        if (playerState->infiniteBuffer < 0 && playerState->realTime){
+            playerState->infiniteBuffer = 1;
+        }
+
+        // Gets the duration of the file, -1 if no duration available
+        if (playerState->realTime){
+            mDuration = -1;
+        } else {
+            mDuration = -1;
+            if (pFormatCtx->duration != AV_NOPTS_VALUE){
+                mDuration = av_rescale(pFormatCtx->duration, 1000, AV_TIME_BASE);
+            }
+        }
+        playerState->videoDuration = mDuration;
+
+        if (pFormatCtx->pb){
+            pFormatCtx->pb->eof_reached = 0;
+        }
+
+        // 判断是否以字节方式定位
+        //todo
     } while (false);
 }
 

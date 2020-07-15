@@ -116,6 +116,30 @@ void PlayerState::setOption(int category, const char *type, const char *option) 
     }
 }
 
+void PlayerState::setOptionLong(int category, const char *type, int64_t option) {
+    switch (category) {
+        case OPT_CATEGORY_FORMAT: {
+            av_dict_set_int(&format_opts, type, option, 0);
+            break;
+        }
+        case OPT_CATEGORY_CODEC: {
+            av_dict_set_int(&codec_opts, type, option, 0);
+            break;
+        }
+        case OPT_CATEGORY_SWS: {
+            av_dict_set_int(&sws_dict, type, option, 0);
+        }
+        case OPT_CATEGORY_PLAYER: {
+            parse_int(type, option);
+            break;
+        }
+        case OPT_CATEGORY_SWR: {
+            av_dict_set_int(&swr_opts, type, option, 0);
+            break;
+        }
+    }
+}
+
 void PlayerState::parse_string(const char *type, const char *option) {
     if (!strcmp("acodec", type)){ //执行音频解码器名称
         audioCodecName = av_strdup(option);

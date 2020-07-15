@@ -22,7 +22,7 @@
 #define MSG_AUDIO_RENDERING_START 0X56  //音频渲染开始（播放开始）
 #define MSG_VIDEO_START         0X57    //开始视频解码
 #define MSG_VIDEO_RENDERING_START   0X58    //视频渲染开始
-#define MSG_VIDEO_ROTATION_CHANGE   0X59    //旋转角度变化
+#define MSG_VIDEO_ROTATION_CHANGED   0X59    //旋转角度变化
 
 #define MSG_BUFFERING_START         0X60    //缓冲开始
 #define MSG_BUFFERING_END           0X61    //缓冲完成
@@ -31,7 +31,7 @@
 
 #define MSG_SEEK_COMPLETE          0X70     //定位完成
 #define MSG_PLAYBACK_STATE_CHANGE  0X80     //播放状态变更
-#define MSG_TIMED_TXT               0X90    //字幕
+#define MSG_TIMED_TXET               0X90    //字幕
 
 #define MSG_REQUEST_PREPARE         0X200   //异步请求准备
 #define MSG_REQUEST_START           0X201   //异步请求开始

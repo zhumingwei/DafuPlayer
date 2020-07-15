@@ -471,9 +471,35 @@ void CainMediaPlayer::run() {
             case MSG_REQUEST_START: {
                 ALOGD("CainMediaPlayer is waiting to start.\n");
                 break;
+            }
 
+            case MSG_REQUEST_PAUSE: {
+                ALOGD("CainMediaPlayer is pausing...");
+                pause();
+                break;
+            }
+
+            case MSG_REQUEST_SEEK: {
+                ALOGD("CainMediaPlayer is seeking...");
+                mSeeking = true;
+                mSeekingPosition = (long)msg.arg1;
+                if (mediaPlayer != nullptr) {
+                    mediaPlayer->seekTo(mSeekingPosition);
+                }
+                break;
+            }
+
+            case MSG_CURRENT_POSITION: {
+                postEvent(MEDIA_CURRENT, msg.arg1, msg.arg2);
+                break;
+            }
+
+            default: {
+                ALOGE("CainMediaPlayer unknown MSG_xxx(%d)\n",msg.what);
+                break;
             }
         }
+        message_free_resource(&msg);
     }
 }
 

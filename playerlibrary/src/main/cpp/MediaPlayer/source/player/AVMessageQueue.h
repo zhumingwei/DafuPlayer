@@ -14,6 +14,7 @@ extern "C" {
 
 #include <Mutex.h>
 #include <Condition.h>
+#include <cassert>
 #include "PlayerMessage.h"
 
 typedef struct AVMessage {
@@ -33,6 +34,15 @@ inline static void message_init(AVMessage *msg) {
 
 inline static void message_free(void *obj) {
     av_free(obj);
+}
+
+inline static void message_free_resource(AVMessage *msg) {
+    if(!msg || !msg->obj) {
+        return;
+    }
+    assert(msg->free);
+    msg->free(msg->obj);
+    msg->obj = NULL;
 }
 
 class AVMessageQueue {

@@ -103,7 +103,7 @@ int AVMessageQueue::getMessage(AVMessage *msg, int block) {
             }
             mSize--;
             *msg = *msg1;
-            msg1->obj = NULL;//fixme diff msg->obj = null?
+            msg1->obj = NULL;
             av_free(msg1);
             ret = 1;
             break;

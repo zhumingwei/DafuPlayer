@@ -10,6 +10,7 @@ CainMediaPlayer::CainMediaPlayer() {
     videoDevice = nullptr;
     mediaPlayer = nullptr;
     mPrepareSync = false;
+    mListener = nullptr;
     mPrepareStatus = NO_ERROR;
     mAudioSessionId = 0;
     mSeeking = false;
